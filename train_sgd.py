@@ -13,7 +13,7 @@ from tqdm import tqdm
 # ssl._create_default_https_context = ssl._create_unverified_context
 
 EPOCHS = 20
-BATCH_SIZE = 4096
+BATCH_SIZE = 512
 
 device = "cuda:0" if cuda.is_available() else "cpu"
 
@@ -56,7 +56,7 @@ for epoch in range(EPOCHS):
             tr_accuracy += (sft_outputs == labels).float().sum()
             progress += 1
 
-            tepoch.set_postfix({"loss":loss.item(), "accuracy":((tr_accuracy*100)/(progress*BATCH_SIZE)).item()})
+            tepoch.set_postfix({"loss":loss.item(), "accuracy":(100*((tr_accuracy.item())/(progress*BATCH_SIZE)))})
     
     val_accuracy = 0.0
     for inputs, labels in iter(test_loader):
@@ -64,8 +64,8 @@ for epoch in range(EPOCHS):
 
         outputs = model(inputs)
         
-        max_outputs = argmax(softmax(outputs))
+        max_outputs = argmax(softmax(outputs), dim=1)
         val_accuracy += (max_outputs == labels).float().sum()
 
-    print('\t\tval_accuracy: {0}'.format((val_accuracy/len(test_loader)).item()))
+    print('\t\tval_accuracy: {0}'.format((val_accuracy/len(test_loader)).item()*100))
 
