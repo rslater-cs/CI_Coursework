@@ -1,9 +1,9 @@
 import torch
 from torch import cuda
-import torch.optim as optim
 from torch.nn import CrossEntropyLoss, Softmax
 from torch import argmax
 from loader.cifar10 import CIFAR10_Loader
+from torch_pso import ParticleSwarmOptimizer
 
 from architecture.effnet import EfficientNet
 
@@ -13,7 +13,7 @@ from tqdm import tqdm
 # ssl._create_default_https_context = ssl._create_unverified_context
 
 EPOCHS = 100
-BATCH_SIZE = 16
+BATCH_SIZE = 4
 
 device = "cuda:0" if cuda.is_available() else "cpu"
 
@@ -27,7 +27,7 @@ print(model)
 loader = CIFAR10_Loader(BATCH_SIZE)
 
 criterion = CrossEntropyLoss()
-optimizer = optim.SGD(model.parameters(), lr=1e-3)
+optimizer = ParticleSwarmOptimizer(model.parameters(), inertial_weight=0.9, num_particles=5, max_param_value=10, min_param_value=-10)
 
 softmax = Softmax(1)
 
@@ -42,13 +42,16 @@ for epoch in range(EPOCHS):
 
             inputs, labels = inputs.to(device), labels.to(device)
 
-            optimizer.zero_grad()
-
             outputs = model(inputs)
+
+            optimizer.zero_grad()  
             loss = criterion(outputs, labels)
 
-            loss.backward()
-            optimizer.step()
+            def closure():
+                return loss
+
+            # loss.backward()
+            optimizer.step(closure)
 
             sft_outputs = softmax(outputs)
             sft_outputs = argmax(sft_outputs, dim=1)
