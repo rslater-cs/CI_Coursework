@@ -3,7 +3,7 @@ from torch import Tensor
 from torch import argmax
 
 
-class MinAccuracy(Module):
+class Accuracy(Module):
     def __init__(self):
         super().__init__()
         self.softmax = Softmax(1)
@@ -14,7 +14,7 @@ class MinAccuracy(Module):
         correct = (max_idx == target).float().sum()
 
         # Higher accuracy is better
-        accuracy = 100*(correct/len(input))
+        accuracy = 100*correct
 
         # Convert into a minimisation problem
-        return 100-accuracy
+        return accuracy
