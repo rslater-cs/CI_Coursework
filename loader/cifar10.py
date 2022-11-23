@@ -12,8 +12,8 @@ class CIFAR10_Loader():
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
         ])
 
-        self.val_len = 500
-        trainset = Subset(CIFAR10(root='./data', train=True, download=True, transform=transform), list(range(5000)))
+        self.val_len = 5000
+        trainset = CIFAR10(root='./data', train=True, download=True, transform=transform)
         self.train_len = len(trainset)-self.val_len
         trainset, valset = random_split(trainset, [self.train_len, self.val_len])
 
