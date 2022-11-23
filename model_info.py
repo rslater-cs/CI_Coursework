@@ -26,6 +26,7 @@ for param in model.parameters():
     if param.requires_grad:
         trainable_params += torch.prod(torch.tensor(param.shape))
 
+print(model)
 print("Tensors:", tensors)
 print("Params:", total_params)
 print("Trainable Params:", trainable_params)
