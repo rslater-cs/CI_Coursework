@@ -4,7 +4,6 @@ To run code:
 - navigate to project location in termial
 - conda env create -f comp_env.yml
 - packages should install without error if not then follow 'To make env in ubuntu'
-\n(once all packages are install in an env called comp_intel) 
 - conda activate comp_intel
 Now you should be able to run any of the scripts with python [script_name].py
 
