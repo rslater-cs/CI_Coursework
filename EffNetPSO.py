@@ -1,6 +1,9 @@
 import torch
 from torch.nn import Module
 from typing import Callable
+import copy
+import operator
+from model_info import get_param_count
 
 # YOU NEED TO MAKE A PARTICLE CLASS BECUASE YOU NEED TO HOLD A VELOCTY AND POSITION VECTOR ALONG WITH A LOSS AND ACCURACY VALUE!!!!
 
@@ -8,66 +11,95 @@ APLHA = 0.5
 BETA = 0.01
 M = 100
 
-class PSO():
+class Particle():
 
-    def __init__(self, num_particles: int, num_dimensions: int, net: Module, device: str):
-        self.num_particles = num_particles
+    def __init__(self, num_dimensions, device, id):
+        self.id = id
         self.num_dimensions = num_dimensions
         self.device = device
+
+        self.position = torch.rand(self.num_dimensions).to(device)
+        self.velocity = torch.rand(self.num_dimensions)
+
+        self.loss = 0
+        self.accuracy = 0
+
+    def evaluate(self, closure: Callable):
+        self.loss, self.accuracy = closure(self.id)
+
+    def learn_from(self, teacher, r, epsilon, mean_dims):
+        self.velocity = r[0]*self.velocity + r[1]*(teacher.position-self.position) + r[2]*epsilon*(mean_dims-self.position)
+        self.position += self.velocity
+        
+
+class PSO():
+
+    def __init__(self, net: Module, device: str, num_particles: int = None):
+        self.device = device
         self.net = net
+
+        self.num_dimensions = get_param_count(self.net)
+
+        if num_particles is None:
+            self.num_particles = M+torch.floor(self.num_dimensions/10)
+        else:
+            self.num_particles = num_particles
+
+        self.epsilon = BETA*(self.num_dimensions/M)
 
         i = torch.linspace(0, self.num_particles-2, 1)
         self.learning_probabilities = torch.pow((1-(i/self.num_particles)), APLHA*torch.log(torch.ceil(self.num_particles/M)))
 
         # Create particles
-        self.particles = torch.rand((self.num_particles, self.num_dimensions)).to(self.device)
+        self.particles = [Particle(self.num_dimensions, self.device, i) for i in range(self.num_particles)]
 
-    def evalute(self, particle: torch.Tensor, closure: Callable):
-        net_params = self.net.parameters()
-
-        # Copy parameters into network
+    def load_net_params(self, particle: Particle):
         param_pointer = 0
-        for param in net_params:
+
+        for param in self.net.parameters():
             param_len = torch.prod(torch.tensor(param.shape))
-            p_param = particle[param_pointer:param_pointer+param_len]
+            p_param = particle.position[param_pointer:param_pointer+param_len]
             p_param = p_param.reshape(param.shape)
             param.data = p_param
 
             param_pointer += param_len
 
-        loss, accuracy = closure()
+    def evalute(self, particle: Particle, closure: Callable):
+        self.load_net_params(particle)
 
-        return loss, accuracy
+        particle.evaluate(closure())
 
-    def update_sl(self, losses: torch.Tensor):
-        idxs = torch.argsort(losses, descending=True)
-        self.particles = torch.gather(self.particles, idxs)
+    def calc_mean(self):
+        result = torch.zeros(self.num_dimensions).to(self.device)
+
+        for particle in self.particles:
+            result += particle.position
+
+        result /= self.num_particles
+
+        return result
+
+    def update_sl(self, mean_dims):
+        self.particles.sort(key=operator.attrgetter('loss'), reverse=True)
 
         p = torch.rand(self.num_particles)
         does_learn = torch.le(p, self.learning_probabilities)
-        for i, particle, learn in enumerate(zip(self.particles[:-1], does_learn)):
+
+        acceleration = torch.rand((self.num_particles, 3))
+
+        for i, learner, learn, r_set in enumerate(zip(self.particles[:-1], does_learn, acceleration)):
             if learn:
                 teacher = torch.randint(i+1, len(self.particles)-1)
-
-
+                learner.learn_from(teacher, r_set, self.epsilon, mean_dims)
 
     def step(self, closure: Callable):
-        # Choose a redundant best with higest possible score to make sure they are beat
-        self.global_best = self.particles[0].clone().detach()
-        self.global_best_score = torch.inf
 
-        scores = torch.empty((self.num_particles, 2))
-        for particle, score in zip(self.particles, scores):
-            loss, accuracy = self.evalute(particle, closure)
+        for particle in self.particles:
+            self.evalute(particle, closure)
 
-            if loss < self.global_best_score:
-                self.global_best = particle.clone().detach()
-                self.global_best_score = loss
+        mean_dims = self.calc_mean()
 
-            score[0] = loss
-            score[1] = accuracy
+        self.update_sl(mean_dims)
 
-        
+        self.load_net_params(self.particles[-1])
 
-
-        

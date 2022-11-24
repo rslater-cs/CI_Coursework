@@ -1,32 +1,26 @@
 from torch import cuda
 from architecture.effnet import EfficientNet
 import torch
+from torch.nn import Module
 # import ssl
 
 # ssl._create_default_https_context = ssl._create_unverified_context
 
-EPOCHS = 100
-BATCH_SIZE = 16
+def get_param_count(model: Module):
+    total_params = 0
+    for param in model.parameters():
+        total_params += torch.prod(torch.tensor(param.shape))
+    return total_params
 
-device = "cuda:0" if cuda.is_available() else "cpu"
+if __name__ == "__main__":
 
-print("Using", device)
+    device = "cuda:0" if cuda.is_available() else "cpu"
 
-model = EfficientNet()
-model = model.to(device)
-model.train()
+    print("Using", device)
 
-total_params = 0
-trainable_params = 0
-tensors = 0
-for param in model.parameters():
-    tensors += 1
-    print(torch.tensor(param.shape))
-    total_params += torch.prod(torch.tensor(param.shape))
-    if param.requires_grad:
-        trainable_params += torch.prod(torch.tensor(param.shape))
+    model = EfficientNet()
+    model = model.to(device)
+    model.train()
 
-print(model)
-print("Tensors:", tensors)
-print("Params:", total_params)
-print("Trainable Params:", trainable_params)
+    print(model)
+    print(get_param_count(model))

@@ -12,17 +12,11 @@ from tqdm import tqdm
 
 # ssl._create_default_https_context = ssl._create_unverified_context
 
-def train_sgd(model, epochs, batch_size, model_name):
-    device = "cuda:0" if cuda.is_available() else "cpu"
-
+def train_sgd(model, loader, criterion, device, epochs, model_name):
     print("Using", device)
 
     model = model.to(device)
     model.train()
-
-    loader = CIFAR10_Loader(batch_size)
-
-    criterion = CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=1e-3)
 
     softmax = Softmax(1)
@@ -90,5 +84,8 @@ if __name__ == "__main__":
     EPOCHS = 50
     BATCH_SIZE = 16
     MODEL = EfficientNet()
+    LOADER = CIFAR10_Loader(BATCH_SIZE)
+    CRITERION = CrossEntropyLoss()
+    DEVICE = "cuda:0" if cuda.is_available() else "cpu"
     MODEL_NAME = "effnet_sgd"
-    train_sgd(model=MODEL, epochs=EPOCHS, batch_size=BATCH_SIZE, model_name=MODEL_NAME)
+    train_sgd(model=MODEL, loader=LOADER, criterion=CRITERION, device=DEVICE, epochs=EPOCHS, model_name=MODEL_NAME)
