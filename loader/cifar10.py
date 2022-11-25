@@ -1,7 +1,7 @@
 from torchvision import transforms
 from torchvision.transforms import ToTensor
 from torchvision.datasets import CIFAR10
-from torch.utils.data import DataLoader, random_split, Subset
+from torch.utils.data import DataLoader, random_split, Dataset
 
 class CIFAR10_Loader():
 
@@ -23,3 +23,15 @@ class CIFAR10_Loader():
         self.train = DataLoader(trainset, batch_size=batch_size, shuffle=True)
         self.valid = DataLoader(valset, batch_size=4, shuffle=False)
         self.test = DataLoader(testset, batch_size=4, shuffle=False)
+
+class CIFAR10_Features(Dataset):
+
+    def __init__(self, features, labels):
+        self.features = features
+        self.labels = labels
+
+    def __len__(self):
+        return self.features.shape[0]
+
+    def __getitem__(self, index):
+        return self.features[index], self.labels[index]
