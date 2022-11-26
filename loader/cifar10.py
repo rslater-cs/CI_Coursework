@@ -21,8 +21,8 @@ class CIFAR10_Loader():
         self.test_len = len(testset)
 
         self.train = DataLoader(trainset, batch_size=batch_size, shuffle=True)
-        self.valid = DataLoader(valset, batch_size=4, shuffle=False)
-        self.test = DataLoader(testset, batch_size=4, shuffle=False)
+        self.valid = DataLoader(valset, batch_size=batch_size, shuffle=False)
+        self.test = DataLoader(testset, batch_size=batch_size, shuffle=False)
 
 class CIFAR10_Features(Dataset):
 

@@ -1,7 +1,7 @@
 import torch
 from torch import cuda
 import torch.optim as optim
-from torch.nn import CrossEntropyLoss, Softmax
+from torch.nn import CrossEntropyLoss, Softmax, Module
 from torch import argmax
 from loader.cifar10 import CIFAR10_Loader
 from training_logger import Train_Logger
@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 # ssl._create_default_https_context = ssl._create_unverified_context
 
-def train_sgd(model, loader, logger, criterion, device, epochs, model_name):
+def train_sgd(model: Module, loader, logger, criterion, device, epochs, model_name):
     print("Using", device)
 
     model = model.to(device)
@@ -28,6 +28,9 @@ def train_sgd(model, loader, logger, criterion, device, epochs, model_name):
         tr_accuracy = 0.0
         tr_loss = 0.0
         progress = 0
+
+        model.requires_grad_(True)
+        model.train()
         with tqdm(loader.train, unit="batch") as tepoch:
             for inputs, labels in tepoch:
                 tepoch.set_description(f"Epoch {epoch}")
@@ -53,6 +56,8 @@ def train_sgd(model, loader, logger, criterion, device, epochs, model_name):
         
         tr_accuracy = 100*tr_accuracy/loader.train_len
         
+        model.requires_grad_(False)
+        model.eval()
         val_accuracy = 0.0
         for inputs, labels in iter(loader.valid):
             inputs, labels = inputs.to(device), labels.to(device)

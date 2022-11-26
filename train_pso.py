@@ -9,10 +9,10 @@ from torch import argmax
 import torch
 from tqdm import tqdm
 
-PSO_EPOCHS = 20
-SGD_EPOCHS = 20
+PSO_EPOCHS = 50
+SGD_EPOCHS = 50
 
-BATCH_SIZE = 16
+BATCH_SIZE = 32
 
 NUM_PARTICLES = None
 
@@ -98,7 +98,7 @@ for epoch in range(PSO_EPOCHS):
     val_accuracy = 100*val_accuracy.item()/loader.val_len
     print("\t\tValid Accuracy:", val_accuracy)
 
-    logger.put(epoch=epoch, tloss=bloss, taccuracy=baccuracy, vaccuracy=val_accuracy)
+    logger.put(epoch=epoch, tloss=bloss.item(), taccuracy=baccuracy.item(), vaccuracy=val_accuracy)
 
 test_accuracy = 0.0
 for inputs, labels in iter(loader.test):
