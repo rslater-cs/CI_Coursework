@@ -94,11 +94,13 @@ def train_sgd(model: Module, loader, logger, criterion, device, epochs, model_na
     return model
 
 if __name__ == "__main__":
-    EPOCHS = 50
-    BATCH_SIZE = 16
+    EPOCHS = 100
+    BATCH_SIZE = 32
     MODEL = EfficientNet()
     LOADER = CIFAR10_Loader(BATCH_SIZE)
     CRITERION = CrossEntropyLoss()
     DEVICE = "cuda:0" if cuda.is_available() else "cpu"
     MODEL_NAME = "effnet_sgd"
-    train_sgd(model=MODEL, loader=LOADER, criterion=CRITERION, device=DEVICE, epochs=EPOCHS, model_name=MODEL_NAME)
+    LOGGER = Train_Logger("sgd")
+    
+    train_sgd(model=MODEL, loader=LOADER, logger=LOGGER, criterion=CRITERION, device=DEVICE, epochs=EPOCHS, model_name=MODEL_NAME)
