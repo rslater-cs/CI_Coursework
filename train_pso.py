@@ -98,7 +98,7 @@ for epoch in range(PSO_EPOCHS):
     val_accuracy = 100*val_accuracy.item()/loader.val_len
     print("\t\tValid Accuracy:", val_accuracy)
 
-    logger.put(epoch=epoch, tloss=bloss.item(), taccuracy=baccuracy.item(), vaccuracy=val_accuracy)
+    logger.put(epoch=epoch+SGD_EPOCHS, tloss=bloss.item(), taccuracy=baccuracy.item(), vaccuracy=val_accuracy)
 
 test_accuracy = 0.0
 for inputs, labels in iter(loader.test):
