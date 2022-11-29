@@ -58,6 +58,6 @@ def display_axis2d(files, headers, casts, join_axis=0):
     plt.show()
 
 if __name__ == "__main__":
-    display_axis2d(["./models/logs/pso.csv", "./models/logs/sgd.csv"], ["Epoch", "Valid_Accuracy"], [int, float, float])
-    display_axis2d(["./models/logs/pso.csv", "./models/logs/sgd.csv"], ["Epoch", "Train_Accuracy"], [int, float, float])
+    display_axis2d(["./models/logs/pso.csv", "./models/logs/sgd.csv"], ["Epoch", "Valid_Accuracy"], [int, float])
+    display_axis2d(["./models/logs/pso.csv", "./models/logs/sgd.csv"], ["Epoch", "Train_Accuracy"], [int, float])
             

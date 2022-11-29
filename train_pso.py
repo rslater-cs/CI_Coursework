@@ -7,7 +7,7 @@ from EffNetPSO import PSO
 from torch.nn import Softmax, CrossEntropyLoss
 from torch import argmax
 import torch
-from tqdm import tqdm
+from torch_pso import ParticleSwarmOptimizer
 
 PSO_EPOCHS = 50
 SGD_EPOCHS = 50
