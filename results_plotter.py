@@ -17,7 +17,7 @@ def get_stats(filename, headers):
 
     return stats
 
-def display_axis2d(files, headers, casts, join_axis=0):
+def display_axis2d(files, labels, headers, casts, join_axis=0):
     if len(headers) != 2:
         return
 
@@ -48,16 +48,21 @@ def display_axis2d(files, headers, casts, join_axis=0):
     print("X_DATA:\n", x_data)
     print("Y_DATA:\n", y_data)
 
+    plt.xlabel("Epochs")
+    plt.ylabel("Accuracy")
+
     for i in range(len(y_data)):
-        plt.plot(x_data, y_data[i])
+        plt.plot(x_data, y_data[i], label=labels[i])
+
+    plt.legend(loc='lower right')
 
     plt.axvline(x=49, label="PSO start", color="red", ls="--")
-    plt.text(46,10,'PSO start',rotation=90)
+    plt.text(46,10,'SL-PSO start',rotation=90)
 
     plt.savefig(f'./models/results/{headers[(join_axis+1)%2]}.png')
     plt.show()
 
 if __name__ == "__main__":
-    display_axis2d(["./models/logs/pso.csv", "./models/logs/sgd.csv"], ["Epoch", "Valid_Accuracy"], [int, float])
-    display_axis2d(["./models/logs/pso.csv", "./models/logs/sgd.csv"], ["Epoch", "Train_Accuracy"], [int, float])
+    display_axis2d(["./models/logs/pso.csv", "./models/logs/sgd.csv"], ["SGD+SL-PSO", "SGD"],["Epoch", "Valid_Accuracy"], [int, float])
+    display_axis2d(["./models/logs/pso.csv", "./models/logs/sgd.csv"], ["SGD+SL-PSO", "SGD"],["Epoch", "Train_Accuracy"], [int, float])
             
