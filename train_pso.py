@@ -109,7 +109,7 @@ for inputs, labels in iter(loader.test):
     sft_outputs = argmax(sft_outputs, dim=1)
     test_accuracy += (sft_outputs == labels).float().sum()
 
-val_accuracy = 100*test_accuracy.item()/loader.test_len
+test_accuracy = 100*test_accuracy.item()/loader.test_len
 print("\t\tTest Accuracy:", test_accuracy)
 
 logger.close()

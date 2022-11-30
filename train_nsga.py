@@ -1,16 +1,16 @@
 from train_sgd import train_sgd
 from architecture.effnet import EfficientNet
 from loader.cifar10 import CIFAR10_Loader, CIFAR10_Features
-from training_logger import Train_Logger
+from training_logger import NSGA_Logger
 from torch.utils.data import DataLoader
 from NSGAII import NSGA
+from criterions.nsga_crit import Correct, Complexity
 from torch.nn import Softmax, CrossEntropyLoss
 from torch import argmax
 import torch
 from torch_pso import ParticleSwarmOptimizer
 
 NSGA_EPOCHS = 50
-SGD_EPOCHS = 50
 
 BATCH_SIZE = 32
 
@@ -20,7 +20,7 @@ MODEL_NAME = "effnet_pso"
 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
-logger = Train_Logger("pso")
+logger = NSGA_Logger("nsga")
 
 model = EfficientNet()
 model.to(device)
@@ -30,54 +30,51 @@ loader = CIFAR10_Loader(BATCH_SIZE)
 # Lock everything apart from classifier head
 model.requires_grad_(False)
 
-optimizer = NSGA(model.parameters(), num_induviduals=100)
+criterion1 = Correct()
+criterion2 = Complexity(device)
+
+optimizer = NSGA(model.parameters(), num_induviduals=10, device=device)
 
 for epoch in range(NSGA_EPOCHS):
-    def closure(particle_id):
+    def closure():
         tr_accuracy = 0.0
-        tr_loss = 0.0
         for inputs, labels in iter(loader.train):
             inputs, labels = inputs.to(device), labels.to(device)
 
             outputs = model.classifier(inputs)
 
-            tr_loss += criterion(outputs, labels)
+            tr_accuracy += criterion1(outputs, labels)
 
-            sft_outputs = softmax(outputs)
-            sft_outputs = argmax(sft_outputs, dim=1)
-            tr_accuracy += (sft_outputs == labels).float().sum()
+        accuracy = 100*tr_accuracy/loader.train_len
+        complexity = criterion2(model.parameters())
+        return [accuracy, complexity]
 
-        print(f"Particle {particle_id} (loss:{tr_loss/loader.train_len}, accuracy:{100*tr_accuracy/loader.train_len})")
-        return tr_loss/loader.train_len, 100*tr_accuracy/loader.train_len
+    best = optimizer.step(closure=closure)
 
-    bloss, baccuracy = pso_optimizer.step(closure=closure)
-
-    print(f"Best Loss: {bloss}, Best Accuracy: {baccuracy}")
+    print(f"Best Accuracy: {best[0]}, Best Complexity: {best[1]}")
 
     val_accuracy = 0.0
     for inputs, labels in iter(loader.valid):
         inputs, labels = inputs.to(device), labels.to(device)
 
         outputs = model(inputs)
-        sft_outputs = softmax(outputs)
-        sft_outputs = argmax(sft_outputs, dim=1)
-        val_accuracy += (sft_outputs == labels).float().sum()
+        val_accuracy += criterion1(outputs, labels)
 
     val_accuracy = 100*val_accuracy.item()/loader.val_len
     print("\t\tValid Accuracy:", val_accuracy)
 
-    logger.put(epoch=epoch+SGD_EPOCHS, tloss=bloss.item(), taccuracy=baccuracy.item(), vaccuracy=val_accuracy)
+    val_comp = criterion2(model.parameters())
+
+    logger.put(epoch=epoch, tacc=best[0].item(), tcomp=best[1].item(), vacc=val_accuracy, vcomp=val_comp.item())
 
 test_accuracy = 0.0
 for inputs, labels in iter(loader.test):
     inputs, labels = inputs.to(device), labels.to(device)
 
     outputs = model(inputs)
-    sft_outputs = softmax(outputs)
-    sft_outputs = argmax(sft_outputs, dim=1)
-    test_accuracy += (sft_outputs == labels).float().sum()
+    test_accuracy += criterion1(outputs, labels)
 
-val_accuracy = 100*test_accuracy.item()/loader.test_len
+test_accuracy = 100*test_accuracy.item()/loader.test_len
 print("\t\tTest Accuracy:", test_accuracy)
 
 logger.close()

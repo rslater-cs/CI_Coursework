@@ -1,6 +1,7 @@
-from torch.nn import Module, Softmax
+from torch.nn import Module, Softmax, Parameter
 from torch import argmax
-from torch import Tensor
+import torch
+from typing import Iterator
 
 class Correct(Module):
 
@@ -9,7 +10,7 @@ class Correct(Module):
 
         self.softmax = Softmax(1)
 
-    def forward(self, x: , labels):
+    def forward(self, x: torch.Tensor, labels: torch.Tensor):
         x = self.softmax(x)
         x = argmax(x, dim=1)
         x = (x == labels).float().sum()
@@ -17,7 +18,17 @@ class Correct(Module):
 
 class Complexity(Module):
     
-    def __init__(self):
+    def __init__(self, device):
         super().__init__()
 
-        self.
+        self.device = device
+
+    def forward(self, x: Iterator[Parameter]):
+        result = torch.empty(1).to(self.device)
+
+        for param in x:
+            result += torch.sum(torch.square(param.data))
+
+        return result
+
+

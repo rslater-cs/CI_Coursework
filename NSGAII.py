@@ -7,13 +7,13 @@ import operator
 
 class Induvidual():
 
-    def __init__(self, parameters: List[Parameter], min_val: int, max_val: int, starter: List[Parameter] = None):
+    def __init__(self, device, parameters: List[Parameter], min_val: int, max_val: int, starter: List[Parameter] = None):
+        self.device = device
         self.master = parameters
         self.score = None
         self.min = min_val
         self.max = max_val
         self.valid = False
-        self.device = parameters[0].get_device()
         self.crowding_distance = 0
 
         if starter is not None:
@@ -52,11 +52,12 @@ class Induvidual():
                 child1.append(mp.data.detach().clone())
                 child2.append(ip.data.detach().clone())
 
-        return Induvidual(self.master, self.min, self.max, child1), Induvidual(self.master, self.min, self.max, child2)
+        return Induvidual(self.device, self.master, self.min, self.max, child1), Induvidual(self.device, self.master, self.min, self.max, child2)
 
 class NSGA():
 
-    def __init__(self, parameters: Iterator[Parameter], num_induviduals: int, min_val: int = -10, max_val: int = 10):
+    def __init__(self, parameters: Iterator[Parameter], num_induviduals: int, device, min_val: int = -10, max_val: int = 10):
+        self.device = device
         self.master = []
         for param in parameters:
             self.master.append(param)
@@ -65,7 +66,7 @@ class NSGA():
         self.min_val = min_val
         self.max_val = max_val
 
-        self.induviduals = [Induvidual(self.master, self.min_val, self.max_val) for _ in range(self.num_induviduals)]
+        self.induviduals = [Induvidual(self.device, self.master, self.min_val, self.max_val) for _ in range(self.num_induviduals)]
 
     def dominated(self, front: List[Induvidual], ind: Induvidual):
         for f_ind in front:
@@ -144,4 +145,6 @@ class NSGA():
 
         # Should load one of the best induviduals from the first front into the network for validation and testing
         self.induviduals[0].load_params()
+
+        return self.induviduals[0].score
 
