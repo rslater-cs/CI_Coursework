@@ -1,7 +1,7 @@
 from torch.nn import Module, Parameter
 from torch.optim import Optimizer
 import torch
-from typing import Iterator, List, Callable
+from typing import Iterator, List, Callable, Dict
 from random import randint
 import operator
 
@@ -9,13 +9,12 @@ class Induvidual():
 
     def __init__(self, parameters: List[Parameter], min_val: int, max_val: int, starter: List[Parameter] = None):
         self.master = parameters
-        self.accuracy = 0
-        self.complexity = 0
+        self.score = None
         self.min = min_val
         self.max = max_val
         self.valid = False
         self.device = parameters[0].get_device()
-        self.front = 0
+        self.crowding_distance = 0
 
         if starter is not None:
             self.params = starter
@@ -31,8 +30,9 @@ class Induvidual():
     def evaluate(self, closure: Callable):
         if(not self.valid):
             self.load_params()
-            self.accuracy, self.complexity = closure()
+            self.score = closure()
             self.valid = True
+            self.crowding_distance = 0
 
     def mutate(self):
         param_idx = randint(0, len(self.params)-1)
@@ -70,17 +70,31 @@ class NSGA():
     def dominated(self, front: List[Induvidual], ind: Induvidual):
         for f_ind in front:
             # A>B . C<=D + C<D . A>=B
-            if((f_ind.accuracy > ind.accuracy or f_ind.complexity < ind.complexity)
+            if((f_ind.score[0] > ind.score[0] or f_ind.score[1] < ind.score[1])
                 and
-                (f_ind.accuracy >= ind.accuracy and f_ind.complexity <= ind.complexity)):
+                (f_ind.score[0] >= ind.score[0] and f_ind.score[1] <= ind.score[1])):
                 return True
         return False
 
-    def ENDS(self):
-        #sorts from lowest complexity (good) to highest (bad)
-        self.induviduals.sort(key=operator.attrgetter('complexity'))
+    def crowding_distance(self, front: List[Induvidual], max_scores: List[int], min_scores: List[int]):
+        for i in range(len(front[0].score)):
+            sorted_front = sorted(front, key=operator.attrgetter('score')[i])
+            sorted_front[0].crowding_distance += torch.inf
+            sorted_front[-1].crowding_distance += torch.inf
 
-        fronts = {0: []}
+            for j in range(1, len(front)-1):
+                d = torch.abs(sorted_front[j-1].score[i]-sorted_front[j+1].score[i])
+                dHat = d/(max_scores[i]-min_scores[i])
+                sorted_front[j].crowding_distance += dHat
+
+        front.sort(key=operator.attrgetter('crowding_distance'), reverse=True)
+
+        return front
+
+    def get_fronts(self):
+        self.induviduals.sort(key=operator.attrgetter('score')[1])
+
+        fronts: Dict[int, List[Induvidual]] = {0: []}
 
         for ind in self.induviduals:
             dom = True
@@ -91,18 +105,43 @@ class NSGA():
                     break
             if dom:
                 fronts[fronts.keys()[-1]+1] = [ind]
+            
 
-        # Move fronts into induviduals then use crowding distance
-                
+    def selection(self, max_scores, min_scores):
+        fronts: Dict[int, List[Induvidual]] = self.get_fronts()
 
+        new_ind = []
+        
+        current_front = 0
+        while(len(new_ind)+len(fronts[current_front]) <= self.num_induviduals):
+            for ind in fronts[current_front]:
+                new_ind.append(ind)
+            current_front+=1
+
+        if(len(new_ind) != self.num_induviduals):
+            for ind in fronts[current_front]:
+                ind.crowding_distance = 0
+
+            sorted_front = self.crowding_distance(fronts[current_front], max_scores, min_scores)
+
+            for i in range(self.num_induviduals-len(new_ind)):
+                new_ind.append(sorted_front[i])
+
+        return new_ind
 
     def step(self, closure: Callable):
+        max_scores = [0]*len(self.induviduals[0].score)
+        min_scores = [torch.inf]*len(self.induviduals[0].score)
+
         for induvidual in self.induviduals:
             induvidual.evaluate(closure)
 
+            for i in range(len(max_scores)):
+                max_scores[i] = max(max_scores[i], induvidual.score[i])
+                min_scores[i] = min(min_scores[i], induvidual.score[i])
+            
+        self.induviduals: List[Induvidual] = self.selection(max_scores, min_scores)
 
-        
-
-
-        
+        # Should load one of the best induviduals from the first front into the network for validation and testing
+        self.induviduals[0].load_params()
 

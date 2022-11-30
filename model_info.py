@@ -23,4 +23,5 @@ if __name__ == "__main__":
     model.train()
 
     print(model)
+    print(get_param_count(model.classifier))
     print(get_param_count(model))

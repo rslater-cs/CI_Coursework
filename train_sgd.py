@@ -104,3 +104,4 @@ if __name__ == "__main__":
     LOGGER = Train_Logger("sgd")
     
     train_sgd(model=MODEL, loader=LOADER, logger=LOGGER, criterion=CRITERION, device=DEVICE, epochs=EPOCHS, model_name=MODEL_NAME)
+    LOGGER.close()
