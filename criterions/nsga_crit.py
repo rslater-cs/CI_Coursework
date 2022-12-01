@@ -10,7 +10,7 @@ class Correct(Module):
 
         self.softmax = Softmax(1)
 
-    def forward(self, x: torch.Tensor, labels: torch.Tensor):
+    def forward(self, x: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
         x = self.softmax(x)
         x = argmax(x, dim=1)
         x = (x == labels).float().sum()
@@ -23,7 +23,7 @@ class Complexity(Module):
 
         self.device = device
 
-    def forward(self, x: Iterator[Parameter]):
+    def forward(self, x: Iterator[Parameter]) -> torch.Tensor:
         result = torch.empty(1).to(self.device)
 
         for param in x:

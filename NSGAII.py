@@ -5,6 +5,8 @@ from typing import Iterator, List, Callable, Dict
 from random import randint
 import operator
 
+MUTATE_PROB = 0.01
+
 class Induvidual():
 
     def __init__(self, device, parameters: List[Parameter], min_val: int, max_val: int, starter: List[Parameter] = None):
@@ -40,7 +42,7 @@ class Induvidual():
         self.valid = False
 
     def crossover(self, mate: List[Parameter]):
-        feature_inheritence = torch.randint(low=0, high=1, size=len(self.params)).to(self.device)
+        feature_inheritence = torch.randint(low=0, high=1, size=(len(self.params),)).to(self.device)
 
         child1 = []
         child2 = []
@@ -79,7 +81,7 @@ class NSGA():
 
     def crowding_distance(self, front: List[Induvidual], max_scores: List[int], min_scores: List[int]):
         for i in range(len(front[0].score)):
-            sorted_front = sorted(front, key=operator.attrgetter('score')[i])
+            sorted_front = sorted(front, key=lambda ind: ind.score[i])
             sorted_front[0].crowding_distance += torch.inf
             sorted_front[-1].crowding_distance += torch.inf
 
@@ -88,12 +90,12 @@ class NSGA():
                 dHat = d/(max_scores[i]-min_scores[i])
                 sorted_front[j].crowding_distance += dHat
 
-        front.sort(key=operator.attrgetter('crowding_distance'), reverse=True)
+        front.sort(key=lambda ind: ind.crowding_distance, reverse=True)
 
         return front
 
     def get_fronts(self):
-        self.induviduals.sort(key=operator.attrgetter('score')[1])
+        self.induviduals.sort(key=lambda ind: ind.score[1])
 
         fronts: Dict[int, List[Induvidual]] = {0: []}
 
@@ -105,7 +107,9 @@ class NSGA():
                     front.append(ind)
                     break
             if dom:
-                fronts[fronts.keys()[-1]+1] = [ind]
+                fronts[list(fronts.keys())[-1]+1] = [ind]
+
+        return fronts
             
 
     def selection(self, max_scores, min_scores):
@@ -130,9 +134,26 @@ class NSGA():
 
         return new_ind
 
-    def step(self, closure: Callable):
-        max_scores = [0]*len(self.induviduals[0].score)
-        min_scores = [torch.inf]*len(self.induviduals[0].score)
+    def mutate(self):
+        probs = torch.rand(len(self.induviduals)).to(self.device)
+        mutates = torch.le(probs, MUTATE_PROB)
+
+        for m, ind in zip(mutates, self.induviduals):
+            if m:
+                ind.mutate()
+
+    def offspring(self):
+        for i in range(0, len(self.induviduals), 2):
+            child1, child2 = self.induviduals[i].crossover(self.induviduals[i+1].params)
+            self.induviduals.append(child1)
+            self.induviduals.append(child2)
+
+    def step(self, closure: Callable) -> torch.Tensor:
+        max_scores = [0]*2
+        min_scores = [torch.inf]*2
+        
+        self.mutate()
+        self.offspring()
 
         for induvidual in self.induviduals:
             induvidual.evaluate(closure)

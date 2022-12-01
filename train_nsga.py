@@ -12,11 +12,11 @@ from torch_pso import ParticleSwarmOptimizer
 
 NSGA_EPOCHS = 50
 
-BATCH_SIZE = 32
+BATCH_SIZE = 256
 
-NUM_PARTICLES = None
+NUM_PARTICLES = 10
 
-MODEL_NAME = "effnet_pso"
+MODEL_NAME = "effnet_nsga"
 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
@@ -33,17 +33,22 @@ model.requires_grad_(False)
 criterion1 = Correct()
 criterion2 = Complexity(device)
 
-optimizer = NSGA(model.parameters(), num_induviduals=10, device=device)
+optimizer = NSGA(model.parameters(), num_induviduals=2, device=device)
 
 for epoch in range(NSGA_EPOCHS):
     def closure():
         tr_accuracy = 0.0
+        progress = 0
         for inputs, labels in iter(loader.train):
             inputs, labels = inputs.to(device), labels.to(device)
 
-            outputs = model.classifier(inputs)
+            outputs = model(inputs)
 
             tr_accuracy += criterion1(outputs, labels)
+
+            if progress % 10 == 0:
+                print(progress)
+            progress += 1
 
         accuracy = 100*tr_accuracy/loader.train_len
         complexity = criterion2(model.parameters())
@@ -51,7 +56,7 @@ for epoch in range(NSGA_EPOCHS):
 
     best = optimizer.step(closure=closure)
 
-    print(f"Best Accuracy: {best[0]}, Best Complexity: {best[1]}")
+    print(f"Best Accuracy: {best[0].item()}, Best Complexity: {best[1].item()}")
 
     val_accuracy = 0.0
     for inputs, labels in iter(loader.valid):
