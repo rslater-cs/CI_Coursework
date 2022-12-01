@@ -10,7 +10,7 @@ from torch import argmax
 import torch
 from torch_pso import ParticleSwarmOptimizer
 
-NSGA_EPOCHS = 50
+NSGA_EPOCHS = 100
 
 BATCH_SIZE = 256
 
@@ -33,22 +33,17 @@ model.requires_grad_(False)
 criterion1 = Correct()
 criterion2 = Complexity(device)
 
-optimizer = NSGA(model.parameters(), num_induviduals=2, device=device)
+optimizer = NSGA(model.parameters(), num_induviduals=NUM_PARTICLES, device=device)
 
 for epoch in range(NSGA_EPOCHS):
     def closure():
         tr_accuracy = 0.0
-        progress = 0
         for inputs, labels in iter(loader.train):
             inputs, labels = inputs.to(device), labels.to(device)
 
             outputs = model(inputs)
 
             tr_accuracy += criterion1(outputs, labels)
-
-            if progress % 10 == 0:
-                print(progress)
-            progress += 1
 
         accuracy = 100*tr_accuracy/loader.train_len
         complexity = criterion2(model.parameters())

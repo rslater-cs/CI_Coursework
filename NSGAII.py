@@ -3,9 +3,9 @@ from torch.optim import Optimizer
 import torch
 from typing import Iterator, List, Callable, Dict
 from random import randint
-import operator
+import time
 
-MUTATE_PROB = 0.01
+MUTATE_PROB = 0.05
 
 class Induvidual():
 
@@ -38,7 +38,7 @@ class Induvidual():
 
     def mutate(self):
         param_idx = randint(0, len(self.params)-1)
-        self.params[param_idx].data = self.min_val+(self.max_val-self.min_val)*torch.rand(self.params[param_idx].shape).to(self.device)
+        self.params[param_idx].data = self.params[param_idx].data*(0.9+(1.1-0.9)*torch.rand(self.params[param_idx].shape).to(self.device))
         self.valid = False
 
     def crossover(self, mate: List[Parameter]):
@@ -88,14 +88,14 @@ class NSGA():
             for j in range(1, len(front)-1):
                 d = torch.abs(sorted_front[j-1].score[i]-sorted_front[j+1].score[i])
                 dHat = d/(max_scores[i]-min_scores[i])
-                sorted_front[j].crowding_distance += dHat
+                sorted_front[j].crowding_distance += dHat.item()
 
         front.sort(key=lambda ind: ind.crowding_distance, reverse=True)
 
         return front
 
     def get_fronts(self):
-        self.induviduals.sort(key=lambda ind: ind.score[1])
+        self.induviduals.sort(key=lambda ind: ind.score[0], reverse=True)
 
         fronts: Dict[int, List[Induvidual]] = {0: []}
 
@@ -149,14 +149,17 @@ class NSGA():
             self.induviduals.append(child2)
 
     def step(self, closure: Callable) -> torch.Tensor:
+        start = time.time()
         max_scores = [0]*2
         min_scores = [torch.inf]*2
         
         self.mutate()
         self.offspring()
-
-        for induvidual in self.induviduals:
+        print(len(self.induviduals))
+        for m, induvidual in enumerate(self.induviduals):
             induvidual.evaluate(closure)
+
+            # print(f"Ind {m}: Acc {induvidual.score[0]}, Comp {induvidual.score[1]}")
 
             for i in range(len(max_scores)):
                 max_scores[i] = max(max_scores[i], induvidual.score[i])
@@ -166,6 +169,10 @@ class NSGA():
 
         # Should load one of the best induviduals from the first front into the network for validation and testing
         self.induviduals[0].load_params()
+
+        end = time.time()
+
+        print(f"{end-start} Seconds per Step")
 
         return self.induviduals[0].score
 
