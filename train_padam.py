@@ -10,21 +10,18 @@ from padam import Padam
 
 
 padam_static_params = {
-    'padam': {
-        'lr': 0.001,
-        'weight_decay': 0.0005,
-        'betas': (0.9, 0.999),
-        'color': 'darkred',
-        'linestyle':'-'
-    }
+    'lr': 0.001,
+    'weight_decay': 0.0005,
+    'betas': (0.9, 0.999),
+    'color': 'darkred',
+    'linestyle':'-'
 }
 
-def train_padam(model: Module, loader, logger, criterion, device, epochs, model_name, hyperparams):
+def train_padam(model: Module, loader, logger, criterion, device, epochs, model_name, partial):
     print("Using", device)
     model = model.to(device)
     model.train()
-    learning_rate= 0.1
-    optimizer = Padam(model.parameters(), lr=learning_rate, partial=hyperparams['p'], betas=hyperparams['betas'])
+    optimizer = Padam(model.parameters(), lr=padam_static_params['lr'], partial=partial, betas=padam_static_params['betas'])
 
     softmax = Softmax(1)
 
@@ -105,6 +102,6 @@ if __name__ == "__main__":
 
     for partial in partials:
         padam_static_params['p'] = partial
-        logger = Train_Logger(f'padam_p_{partial}')
-        train_padam(model=MODEL, loader=LOADER, logger=logger, criterion=CRITERION, device=DEVICE, epochs=EPOCHS, model_name=MODEL_NAME)
+        logger = Train_Logger(f'padam_p_{int(100*partial)}')
+        train_padam(model=MODEL, loader=LOADER, logger=logger, criterion=CRITERION, device=DEVICE, epochs=EPOCHS, model_name=MODEL_NAME, partial=partial)
         logger.close()
