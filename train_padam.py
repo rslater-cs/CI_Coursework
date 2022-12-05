@@ -9,22 +9,14 @@ from tqdm import tqdm
 from padam import Padam
 
 
-optim_params = {
+padam_static_params = {
     'padam': {
+        'lr': 0.001,
         'weight_decay': 0.0005,
-        'lr': 0.1,
-        'p': 0.125,
         'betas': (0.9, 0.999),
         'color': 'darkred',
         'linestyle':'-'
     }
-}
-
-padam_params = {
-    'weight_decay': [0.0001, 0.0005, 0.001],
-    'lr': [0.0001, 0.001, 0.01],
-    'p': [0, 0.25, 0.5],
-    'betas': [(0.9, 0.999)]
 }
 
 def train_padam(model: Module, loader, logger, criterion, device, epochs, model_name, hyperparams):
@@ -105,8 +97,14 @@ if __name__ == "__main__":
     BATCH_SIZE = 32
     MODEL = EfficientNet()
     LOADER = CIFAR10_Loader(BATCH_SIZE)
-    LOGGER = Train_Logger("padam")
     CRITERION = CrossEntropyLoss()
     DEVICE = "cuda:0" if cuda.is_available() else "cpu"
     MODEL_NAME = "effnet_padam"
-    train_padam(model=MODEL, loader=LOADER, logger=LOGGER, criterion=CRITERION, device=DEVICE, epochs=EPOCHS, model_name=MODEL_NAME)
+    
+    partials = [0, 0.25, 0.5]
+
+    for partial in partials:
+        padam_static_params['p'] = partial
+        logger = Train_Logger(f'padam_p_{partial}')
+        train_padam(model=MODEL, loader=LOADER, logger=logger, criterion=CRITERION, device=DEVICE, epochs=EPOCHS, model_name=MODEL_NAME)
+        logger.close()
