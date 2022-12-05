@@ -24,7 +24,7 @@ class Complexity(Module):
         self.device = device
 
     def forward(self, x: Iterator[Parameter]) -> torch.Tensor:
-        result = torch.empty(1).to(self.device)
+        result = torch.tensor([0.0]).to(self.device)
 
         for param in x:
             result += torch.sum(torch.square(param.data))
