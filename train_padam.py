@@ -1,12 +1,12 @@
 import torch
-from loader.cifar10 import CIFAR10_Loader
+from data_interface.cifar10 import CIFAR10_Loader
 from architecture.effnet import EfficientNet
-from training_logger import Train_Logger
+from data_interface.training_logger import Train_Logger
 from torch.nn import CrossEntropyLoss, Softmax, Module
 from torch import argmax
 from torch import cuda
 from tqdm import tqdm
-from padam import Padam
+from optimisation.padam import Padam
 
 
 padam_static_params = {
@@ -46,12 +46,16 @@ def train_padam(model: Module, loader, logger, criterion, device, epochs, model_
                 loss.backward()
                 optimizer.step()
 
+                tr_loss += loss
+
                 sft_outputs = softmax(outputs)
                 sft_outputs = argmax(sft_outputs, dim=1)
                 tr_accuracy += (sft_outputs == labels).float().sum()
                 progress += 1
 
                 tepoch.set_postfix({"loss":loss.item(), "accuracy":(100*((tr_accuracy.item())/loader.train_len))})
+
+        tr_accuracy = (100*tr_accuracy.item()/loader.train_len)
 
         model.requires_grad_(False)
         val_accuracy = 0.0    
@@ -66,7 +70,7 @@ def train_padam(model: Module, loader, logger, criterion, device, epochs, model_
         val_accuracy = (val_accuracy/loader.val_len).item()*100
         print('\t\tval_accuracy: {0}'.format(val_accuracy))
 
-        logger.put(epoch=epoch, tloss=tr_loss, taccuracy=tr_accuracy, vaccuracy=val_accuracy)
+        logger.put(epoch=epoch, tloss=tr_loss.item(), taccuracy=tr_accuracy, vaccuracy=val_accuracy)
 
         if(val_accuracy > max_val_acc):
             max_val_acc = val_accuracy
@@ -92,16 +96,16 @@ def train_padam(model: Module, loader, logger, criterion, device, epochs, model_
 if __name__ == "__main__":
     EPOCHS = 100
     BATCH_SIZE = 32
-    MODEL = EfficientNet()
     LOADER = CIFAR10_Loader(BATCH_SIZE)
     CRITERION = CrossEntropyLoss()
     DEVICE = "cuda:0" if cuda.is_available() else "cpu"
     MODEL_NAME = "effnet_padam"
     
-    partials = [0, 0.25, 0.5]
+    partials = [0.5]
 
     for partial in partials:
+        model = EfficientNet()
         padam_static_params['p'] = partial
         logger = Train_Logger(f'padam_p_{int(100*partial)}')
-        train_padam(model=MODEL, loader=LOADER, logger=logger, criterion=CRITERION, device=DEVICE, epochs=EPOCHS, model_name=MODEL_NAME, partial=partial)
+        train_padam(model=model, loader=LOADER, logger=logger, criterion=CRITERION, device=DEVICE, epochs=EPOCHS, model_name=MODEL_NAME, partial=partial)
         logger.close()

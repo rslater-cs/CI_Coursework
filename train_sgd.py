@@ -3,8 +3,8 @@ from torch import cuda
 import torch.optim as optim
 from torch.nn import CrossEntropyLoss, Softmax, Module
 from torch import argmax
-from loader.cifar10 import CIFAR10_Loader
-from training_logger import Train_Logger
+from data_interface.cifar10 import CIFAR10_Loader
+from data_interface.training_logger import Train_Logger
 
 from architecture.effnet import EfficientNet
 

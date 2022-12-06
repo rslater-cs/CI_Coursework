@@ -1,9 +1,9 @@
 from train_sgd import train_sgd
 from architecture.effnet import EfficientNet
-from loader.cifar10 import CIFAR10_Loader, CIFAR10_Features
-from training_logger import NSGA_Logger
+from data_interface.cifar10 import CIFAR10_Loader, CIFAR10_Features
+from data_interface.training_logger import NSGA_Logger
 from torch.utils.data import DataLoader
-from NSGAII import NSGA
+from optimisation.NSGAII import NSGA
 from criterions.nsga_crit import Correct, Complexity
 from torch.nn import Softmax, CrossEntropyLoss
 from torch import argmax

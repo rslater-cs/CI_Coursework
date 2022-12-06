@@ -1,9 +1,9 @@
 from train_sgd import train_sgd
 from architecture.effnet import EfficientNet
-from loader.cifar10 import CIFAR10_Loader, CIFAR10_Features
-from training_logger import Train_Logger
+from data_interface.cifar10 import CIFAR10_Loader, CIFAR10_Features
+from data_interface.training_logger import Train_Logger
 from torch.utils.data import DataLoader
-from EffNetPSO import PSO
+from optimisation.SL_PSO import PSO
 from torch.nn import Softmax, CrossEntropyLoss
 from torch import argmax
 import torch
@@ -64,6 +64,7 @@ print("\t\tLoading done")
 
 softmax = Softmax(1)
 
+highest_loss = 0.0
 for epoch in range(PSO_EPOCHS):
     def closure(particle_id):
         tr_accuracy = 0.0
@@ -83,6 +84,10 @@ for epoch in range(PSO_EPOCHS):
         return tr_loss/loader.train_len, 100*tr_accuracy/loader.train_len
 
     bloss, baccuracy = pso_optimizer.step(closure=closure)
+
+    if bloss > highest_loss:
+        highest_loss = bloss
+        torch.save(model.state_dict(), f"./models/best_sl_pso.pth")
 
     print(f"Best Loss: {bloss}, Best Accuracy: {baccuracy}")
 
@@ -111,5 +116,7 @@ for inputs, labels in iter(loader.test):
 
 test_accuracy = 100*test_accuracy.item()/loader.test_len
 print("\t\tTest Accuracy:", test_accuracy)
+
+torch.save(model.state_dict(), f"./models/final_sl_pso.pth")
 
 logger.close()
