@@ -33,7 +33,8 @@ model.classifier.requires_grad_(False)
 
 sgd_crit = CrossEntropyLoss()
 
-model: EfficientNet = train_sgd(model=model, loader=loader, logger=sgd_logger, criterion=sgd_crit, device=device, epochs=SGD_EPOCHS, model_name=MODEL_NAME)
+# model: EfficientNet = train_sgd(model=model, loader=loader, logger=sgd_logger, criterion=sgd_crit, device=device, epochs=SGD_EPOCHS, model_name=MODEL_NAME)
+model.load_state_dict(torch.load("./models/final_effnet_pso.pth"))
 
 model.requires_grad_(False)
 
