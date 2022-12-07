@@ -3,7 +3,7 @@ from torch.nn import Module
 from typing import Callable
 import random
 import operator
-from ..architecture.model_info import get_param_count
+from model_info import get_param_count
 import numpy as np
 
 APLHA = 0.5

@@ -7,7 +7,7 @@ from torch.nn import Softmax
 models_path = "./models/final_effnet_"
 model_name = "sgd"
 
-full_path = models_path+model_name+".pth"
+full_path = "./models/final_effnet_sgd.pth"
 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 print(device)
